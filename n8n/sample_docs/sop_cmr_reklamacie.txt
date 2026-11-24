@@ -1,0 +1,40 @@
+ŠTANDARDNÝ PREVÁDZKOVÝ POSTUP (SOP): NÁKLADNÝ LIST CMR, MEŠKANIE VYKLÁDKY, REKLAMÁCIE A TRASY
+(Standard Operating Procedure: CMR Consignment Notes, Unloading Delays, Claims & Route Advisories)
+Dokument ID: SOP-2026-OPS-02 | Kategória: smernica | Platnosť od: 01.01.2026
+
+1. POVINNÉ KONTROLY NÁKLADNÉHO LISTU CMR (CMR Consignment Note Rules)
+- Pred odchodom vozidla z nakládky musí vodič skontrolovať polia CMR:
+  * Pole 1–2: presný názov a adresa odosielateľa a príjemcu.
+  * Pole 6–9: počet paliet/kusov, druh obalu, hrubá hmotnosť (kg), prípadné ADR označenie.
+  * Pole 16–17: dopravca a evidenčné číslo vozidla (EČV).
+  * Pole 22–24: podpis a pečiatka odosielateľa, dopravcu a po vykládke aj príjemcu s presným dátumom a časom príchodu/odchodu.
+- Ak sa zistí rozdiel v počte paliet alebo poškodený obal už pri nakládke, vodič zapíše výhradu do poľa 18 CMR a vyhotoví fotodokumentáciu pred zaplombovaním.
+
+2. POSTUP PRI MEŠKANÍ NAKLÁDKY / VYKLÁDKY (Unloading Delay Procedure)
+- Ak vozidlo čaká na vykládku dlhšie ako 90 minút po potvrdenom časovom okne (time-slot), vodič okamžite informuje dispečera.
+- Dispečer kontaktuje zákazníka e-mailom a upozorní na začiatok účtovania stojného po uplynutí 2 voľných hodín (35 EUR/hod pre FTL).
+- Žiadosť zákazníka o zmenu termínu vykládky musí obsahovať číslo objednávky, požadované nové časové okno a potvrdenie prevzatia prípadného stojného alebo preloženia trasy.
+
+3. REKLAMÁCIA A ŠKODOVÁ UDALOSŤ PRI PREKLÁDKE (Cargo Damage Claim Procedure)
+- Pri zistení poškodenia nákladu počas manipulácie s nákladom / prekládky (napr. prerazená paleta vysokozdvižným vozíkom, premočený tovar, strhnutá plomba):
+  1. Vodič a príjemca spíšu na mieste Škodový protokol a zapíšu presnú výhradu do poľa 18 nákladného listu CMR (počet poškodených kusov, charakter škody).
+  2. Vyhotovia sa minimálne 4 fotografie (celkový pohľad na náves, poškodená paleta, etiketa/čiarový kód, detail poškodenia).
+  3. Podľa Dohovoru CMR (čl. 30):
+     - Zjavné poškodenie tovaru: príjemca musí vzniesť výhradu najneskôr pri prevzatí tovaru.
+     - Skryté (nezjavné) poškodenie: písomná reklamácia musí byť doručená dopravcovi do 7 pracovných dní od doručenia (okrem nedieľ a sviatkov).
+     - Meškanie dodania: písomná výhrada do 21 dní odo dňa odovzdania tovaru príjemcovi.
+
+4. INTERNÉ POZNATKY K TRASÁM A HRANIČNÝM PRIECHODOM (Route & Incident History)
+- D1 / D2 Bratislava – Brno – Praha: časté kolóny v úseku Brno (km 190–205) v pondelok ráno 06:30–09:30; odporúčaná časová rezerva +45 minút.
+- Hraničný priechod Vyšné Nemecké – Užhorod (SK–UA): pre nákladné vozidlá priemerné čakacie doby 8–18 hodín; povinné e-čakanie a rezerva paliva min. 60 % nádrže.
+- Hraničný priechod Kúty – Brodské (SK–CZ): pravidelné mobilné kontroly váh (nápravové tlaky) a dokladov CMR.
+- Príjemca „LogistikPark Mníchov – Brána C“: vykládka možná výhradne Po–Pi 06:00–14:00 po predchádzajúcej registrácii v portáli 24 hodín vopred; vozidlo musí mať certifikované protišmykové podložky a min. 16 upínacích popruhov.
+- Sezónne zákazy jázd nad 7,5 t: v SR v nedeľu a počas sviatkov 00:00–22:00; v DE celoročne v nedeľu 00:00–22:00 a v sobotu počas letných prázdnin (01.07.–31.08.) na vybraných diaľniciach.
+
+5. PRAVIDLÁ PRE PRÍPRAVU ODPOVEDÍ NA E-MAILY ZÁKAZNÍKOV (Email Response Guidelines)
+- Pri neúplnom dopyte zákazníka na prepravu vždy overiť a vyžiadať chýbajúce údaje:
+  1. Miesto nakládky a vykládky (PSČ / mesto, krajina)
+  2. Počet paliet, rozmery (napr. EUR 120x80 cm) a celkovú hmotnosť zásielky (kg)
+  3. Požadovaný termín nakládky a vykládky
+  4. Špeciálne požiadavky (ADR režim, teplotný režim, hydraulické čelo, stohovateľnosť)
+- Koncept odpovede pripraviť vecne, zdvorilo a s odkazom na platné tarify a dodacie lehoty. Pri každej cenovej ponuke uviesť, že cena je bez DPH a podlieha voľnej kapacite vozidiel.

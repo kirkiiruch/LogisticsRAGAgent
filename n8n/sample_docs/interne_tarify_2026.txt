@@ -1,0 +1,43 @@
+INTERNÉ PREPRAVNÉ TARIFY A ZMLUVNÉ PODMIENKY DOPRAVCOV 2026
+(Internal Carrier Tariffs & Contract Conditions 2026)
+Dokument ID: TAR-2026-LOG | Kategória: smernica / zmluva | Platnosť od: 01.01.2026
+
+1. ZÁKLADNÉ KILOMETROVÉ SADZBY (Base Kilometer Rates - Kilometrovné)
+- Návesová súprava FTL (13,6 m, do 24 t, 33 EUR paliet):
+  * Vnútroštátna preprava (SK): 1,28 EUR/km bez DPH
+  * Medzinárodná preprava (SK - CZ, napr. Košice - Praha): 1,35 EUR/km bez DPH
+  * Medzinárodná preprava (SK - DE/AT/PL, napr. Bratislava - Mníchov): 1,42 EUR/km bez DPH
+- Sólové vozidlo do 12 t (18 EUR paliet): 1,05 EUR/km bez DPH
+- Dodávka do 3,5 t (8 EUR paliet, expres): 0,72 EUR/km bez DPH
+
+2. PALETOVÉ SADZBY (Pallet Rates - LTL / Zberná služba)
+- Zóna SK (Košice - Bratislava, do 800 kg / paleta): 48,00 EUR / EUR paleta
+- Zóna SK - CZ (napr. Košice - Praha, do 800 kg / paleta): 68,00 EUR / EUR paleta
+- Zóna SK - DE/AT (do 800 kg / paleta): 94,00 EUR / EUR paleta
+- Príplatok za neštandardnú / nestohovateľnú paletu: +15,00 EUR / ks
+
+3. STOJNÉ (Waiting Fees / Demurrage)
+- Voľný čas na nakládku a vykládku: prvé 2 hodiny (120 minút) sú v cene prepravy.
+- Stojné po uplynutí voľného času:
+  * FTL súprava: 35,00 EUR za každú začatú hodinu čakania (maximálne 280,00 EUR / deň)
+  * Sólové vozidlo do 12 t: 25,00 EUR za každú začatú hodinu
+- Podmienka uznania stojného: potvrdený čas príchodu a odchodu v nákladnom liste CMR alebo v elektronickom dodacom liste podpísanom príjemcom.
+
+4. MÝTNE POPLATKY A PALIVOVÝ PRÍPLATOK (Toll & Fuel Surcharge)
+- Mýto (mýtne poplatky): účtuje sa podľa reálnych nákladov elektronického mýta (eMyto SK, MYTO CZ, Toll Collect DE) na základe výpisu OBU alebo príslušného dokladu, maximálne však do limitu 0,24 EUR/km v SR a 0,34 EUR/km v DE.
+- Palivový príplatok (Diesel Surcharge / Palivový príplatok):
+  * Základná referenčná cena nafty: 1,50 EUR/l (bez DPH)
+  * Ak priemerná cena nafty za mesiac nepresiahne 1,60 EUR/l: palivový príplatok = 0 %
+  * Pri cene 1,61 – 1,75 EUR/l: max. +4,5 % zo základného prepravného
+  * Pri cene 1,76 – 1,90 EUR/l: max. +8,0 % zo základného prepravného
+  * Akákoľvek fakturácia palivového príplatku nad 8,0 % bez písomného dodatku vyžaduje manuálne schválenie vedúceho logistiky.
+
+5. PRÍPLATOK ZA ADR REŽIM A ŠPECIÁLNE SLUŽBY (ADR & Special Surcharges)
+- Preprava v režime ADR (triedy 2, 3, 4, 8, 9 – okrem tried 1 a 7): +15 % k základnej sadzbe (minimálne +45,00 EUR na prepravu).
+- Vozidlo s hydraulickým čelom: +25,00 EUR paušál na nakládku/vykládku.
+- Víkendová alebo nočná vykládka (22:00 – 06:00): +40,00 EUR jednorazový príplatok (musí byť vopred objednaná v objednávke prepravy).
+
+6. LEHOTA SPLATNOSTI A FAKTURAČNÉ PODMIENKY (Payment Terms & Invoicing)
+- Štandardná zmluvná lehota splatnosti faktúr dopravcov: 30 dní od doručenia kompletnej faktúry s originálom alebo čitateľným skenom potvrdeného CMR.
+- Kľúčoví zmluvní dopravcovia (Dopravca Alfa s.r.o., TransLogik SK s.r.o.): lehota splatnosti 45 dní.
+- Pravidlo kontroly faktúr: ak fakturovaná cena za km, stojné alebo palivový príplatok prekročí zmluvný limit o viac ako 3 %, faktúra sa automaticky pozastavuje a označuje na manuálne schválenie dispečerom.

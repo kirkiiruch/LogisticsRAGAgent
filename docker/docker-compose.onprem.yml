@@ -1,0 +1,111 @@
+# LogisticsRAGAgent — Complete On-Premise Stack (Thesis Chapter 2.3 Reference Architecture)
+# Usage:
+#   cp ../.env.example ../.env  (fill in placeholder secrets)
+#   docker compose --env-file ../.env -f docker-compose.onprem.yml up -d
+#   # Optional GPU profile for Ollama:
+#   docker compose --env-file ../.env -f docker-compose.onprem.yml --profile gpu up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: logistics_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_POSTGRESDB_DATABASE:-n8n}
+      POSTGRES_USER: ${DB_POSTGRESDB_USER:-n8n}
+      POSTGRES_PASSWORD: ${DB_POSTGRESDB_PASSWORD:?Set DB_POSTGRESDB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_POSTGRESDB_USER:-n8n} -d ${DB_POSTGRESDB_DATABASE:-n8n}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - logistics_net
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: logistics_qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      - logistics_net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: logistics_ollama
+    restart: unless-stopped
+    profiles: ["cpu", ""]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - logistics_net
+
+  ollama-gpu:
+    image: ollama/ollama:latest
+    container_name: logistics_ollama_gpu
+    restart: unless-stopped
+    profiles: ["gpu"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - logistics_net
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: logistics_n8n
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_PORT: 5678
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env}
+      GENERIC_TIMEZONE: Europe/Bratislava
+      TZ: Europe/Bratislava
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${DB_POSTGRESDB_DATABASE:-n8n}
+      DB_POSTGRESDB_USER: ${DB_POSTGRESDB_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${DB_POSTGRESDB_PASSWORD:?Set DB_POSTGRESDB_PASSWORD in .env}
+      OLLAMA_BASE_URL: http://ollama:11434
+      QDRANT_URL: http://qdrant:6333
+      WEBHOOK_BEARER_TOKEN: ${WEBHOOK_BEARER_TOKEN:-}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - logistics_net
+
+volumes:
+  postgres_data:
+  qdrant_storage:
+  ollama_data:
+  n8n_data:
+
+networks:
+  logistics_net:
+    driver: bridge

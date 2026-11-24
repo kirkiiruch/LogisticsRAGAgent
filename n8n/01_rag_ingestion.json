@@ -1,0 +1,645 @@
+{
+  "name": "01_rag_ingestion",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-ingest",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "10000000-0000-4000-8000-000000000101",
+      "name": "Webhook Ingestion",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "logistics-rag-ingest-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const expected = ($env.WEBHOOK_BEARER_TOKEN || '').trim();\nconst headers = $json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization || '';\nconst authorized = !expected || authHeader === ('Bearer ' + expected);\nreturn [{\n  json: {\n    ...$json,\n    authorized\n  },\n  binary: $input.first().binary\n}];"
+      },
+      "id": "10000000-0000-4000-8000-000000000102",
+      "name": "Check Bearer Auth",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "auth-cond-1",
+              "leftValue": "={{ $json.authorized }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "10000000-0000-4000-8000-000000000103",
+      "name": "IF Authorized",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ ({ status: 'error', message: 'Unauthorized: invalid or missing Bearer token' }) }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "10000000-0000-4000-8000-000000000104",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first();\nconst payload = raw.json || {};\nconst body = (payload.body && typeof payload.body === 'object') ? payload.body : payload;\n\nconst categoryMap = {\n  faktura: 'invoice',\n  pokladnicny_doklad: 'receipt',\n  zmluva: 'contract',\n  smernica: 'guideline'\n};\n\nconst category = String(body.category || 'smernica').trim().toLowerCase();\nconst doc_type = String(body.doc_type || categoryMap[category] || category).trim().toLowerCase();\nconst uploaded_at = String(body.uploaded_at || new Date().toISOString());\n\nif (typeof body.text === 'string' && body.text.trim().length > 0) {\n  const filename = String(body.filename || 'inline_document.txt').trim();\n  return [{\n    json: {\n      source_mode: 'json',\n      text: body.text.trim(),\n      filename,\n      category,\n      doc_type,\n      uploaded_at\n    }\n  }];\n}\n\nconst bin = raw.binary || {};\nconst binKey = bin.file ? 'file' : (bin.data ? 'data' : Object.keys(bin)[0]);\nif (!binKey || !bin[binKey]) {\n  return [{\n    json: {\n      source_mode: 'error',\n      error_message: 'Missing binary file (field file/data) or JSON text field',\n      filename: String(body.filename || 'unknown'),\n      category,\n      doc_type,\n      uploaded_at\n    }\n  }];\n}\n\nconst binObj = bin[binKey];\nconst filename = String(body.filename || binObj.fileName || 'uploaded_document.txt').trim();\nconst lowerName = filename.toLowerCase();\nconst mime = String(binObj.mimeType || '').toLowerCase();\n\nlet source_mode = 'txt';\nif (lowerName.endsWith('.pdf') || mime.includes('pdf')) {\n  source_mode = 'pdf';\n} else if (lowerName.endsWith('.csv') || mime.includes('csv')) {\n  source_mode = 'csv';\n} else if (lowerName.endsWith('.docx') || mime.includes('wordprocessingml')) {\n  source_mode = 'docx';\n} else if (lowerName.endsWith('.txt') || mime.startsWith('text/')) {\n  source_mode = 'txt';\n} else {\n  source_mode = 'error';\n}\n\nreturn [{\n  json: {\n    source_mode,\n    filename,\n    category,\n    doc_type,\n    uploaded_at\n  },\n  binary: {\n    data: binObj\n  }\n}];"
+      },
+      "id": "10000000-0000-4000-8000-000000000105",
+      "name": "Prepare Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "mode-json",
+                    "leftValue": "={{ $json.source_mode }}",
+                    "rightValue": "json",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "json"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "mode-pdf",
+                    "leftValue": "={{ $json.source_mode }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "mode-csv",
+                    "leftValue": "={{ $json.source_mode }}",
+                    "rightValue": "csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "csv"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "mode-txt",
+                    "leftValue": "={{ $json.source_mode }}",
+                    "rightValue": "txt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "txt"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "mode-docx",
+                    "leftValue": "={{ $json.source_mode }}",
+                    "rightValue": "docx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "docx"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "10000000-0000-4000-8000-000000000106",
+      "name": "Route Input Format",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "10000000-0000-4000-8000-000000000107",
+      "name": "Extract PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1380,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "csv",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "10000000-0000-4000-8000-000000000108",
+      "name": "Extract CSV",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1380,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const zlib = require('zlib');\nconst meta = $('Prepare Input').first().json;\nconst buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n\nfunction extractDocxXml(buffer) {\n  let eocdOffset = -1;\n  for (let i = buffer.length - 22; i >= Math.max(0, buffer.length - 65557); i--) {\n    if (buffer.readUInt32LE(i) === 0x06054b50) {\n      eocdOffset = i;\n      break;\n    }\n  }\n  if (eocdOffset === -1) {\n    throw new Error('Invalid DOCX archive: EOCD not found');\n  }\n  const cdSize = buffer.readUInt32LE(eocdOffset + 12);\n  const cdOffset = buffer.readUInt32LE(eocdOffset + 16);\n  let pos = cdOffset;\n  while (pos < cdOffset + cdSize) {\n    if (buffer.readUInt32LE(pos) !== 0x02014b50) break;\n    const compMethod = buffer.readUInt16LE(pos + 10);\n    const compSize = buffer.readUInt32LE(pos + 20);\n    const nameLen = buffer.readUInt16LE(pos + 28);\n    const extraLen = buffer.readUInt16LE(pos + 30);\n    const commentLen = buffer.readUInt16LE(pos + 32);\n    const localOffset = buffer.readUInt32LE(pos + 42);\n    const entryName = buffer.toString('utf8', pos + 46, pos + 46 + nameLen);\n    if (entryName === 'word/document.xml') {\n      const lfhNameLen = buffer.readUInt16LE(localOffset + 26);\n      const lfhExtraLen = buffer.readUInt16LE(localOffset + 28);\n      const dataStart = localOffset + 30 + lfhNameLen + lfhExtraLen;\n      const compressed = buffer.subarray(dataStart, dataStart + compSize);\n      const xmlBuf = compMethod === 0 ? compressed : zlib.inflateRawSync(compressed);\n      return xmlBuf.toString('utf8');\n    }\n    pos += 46 + nameLen + extraLen + commentLen;\n  }\n  throw new Error('word/document.xml not found inside DOCX');\n}\n\nlet text = '';\nif (meta.source_mode === 'docx') {\n  const xml = extractDocxXml(buf);\n  text = xml\n    .replace(/<w:p[\\s>]/g, '\\n<w:p ')\n    .replace(/<w:tab\\/>/g, '\\t')\n    .replace(/<[^>]+>/g, '')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n} else {\n  text = buf.toString('utf8').trim();\n}\n\nreturn [{\n  json: {\n    text,\n    filename: meta.filename,\n    category: meta.category,\n    doc_type: meta.doc_type,\n    uploaded_at: meta.uploaded_at\n  }\n}];"
+      },
+      "id": "10000000-0000-4000-8000-000000000109",
+      "name": "Extract Text or DOCX",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ ({ status: 'error', message: $json.error_message || 'Unsupported or empty document input' }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "10000000-0000-4000-8000-000000000110",
+      "name": "Respond Bad Request",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1380,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const meta = $('Prepare Input').first().json;\nconst items = $input.all();\nlet text = '';\n\nif (meta.source_mode === 'csv') {\n  text = items.map((item) => {\n    const row = item.json || {};\n    return Object.entries(row)\n      .map(([k, v]) => `${k}: ${v}`)\n      .join(' | ');\n  }).filter(Boolean).join('\\n');\n} else {\n  const first = items[0] ? items[0].json : {};\n  text = String(first.text || first.data || meta.text || '').trim();\n}\n\nif (!text) {\n  throw new Error('Extracted document text is empty');\n}\n\nconst chunks_estimated = Math.max(1, Math.ceil(text.length / 680));\nreturn [{\n  json: {\n    text,\n    filename: meta.filename,\n    category: meta.category,\n    doc_type: meta.doc_type,\n    uploaded_at: meta.uploaded_at,\n    chunks_estimated\n  }\n}];"
+      },
+      "id": "10000000-0000-4000-8000-000000000111",
+      "name": "Build Document Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1640,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "logistics_docs",
+          "mode": "list",
+          "cachedResultName": "logistics_docs"
+        },
+        "options": {}
+      },
+      "id": "10000000-0000-4000-8000-000000000112",
+      "name": "Qdrant Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.1,
+      "position": [
+        1900,
+        220
+      ],
+      "credentials": {
+        "qdrantApi": {
+          "id": "QDRANT_CREDENTIAL_ID",
+          "name": "Qdrant Cloud API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "json",
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "doc_type",
+                "value": "={{ $json.doc_type }}"
+              },
+              {
+                "name": "category",
+                "value": "={{ $json.category }}"
+              },
+              {
+                "name": "filename",
+                "value": "={{ $json.filename }}"
+              },
+              {
+                "name": "uploaded_at",
+                "value": "={{ $json.uploaded_at }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "10000000-0000-4000-8000-000000000113",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 800,
+        "chunkOverlap": 120,
+        "options": {}
+      },
+      "id": "10000000-0000-4000-8000-000000000114",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text"
+      },
+      "id": "10000000-0000-4000-8000-000000000115",
+      "name": "Embeddings Ollama",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        440
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "OLLAMA_CREDENTIAL_ID",
+          "name": "Ollama Local Tunnel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const meta = $('Build Document Item').first().json;\nconst insertedItems = $input.all();\nconst chunks_indexed = insertedItems.length > 0 ? insertedItems.length : (meta.chunks_estimated || 1);\nreturn [{\n  json: {\n    status: 'ok',\n    filename: meta.filename,\n    category: meta.category,\n    doc_type: meta.doc_type,\n    collection: 'logistics_docs',\n    chunks_indexed,\n    uploaded_at: meta.uploaded_at,\n    message: 'Document successfully indexed'\n  }\n}];"
+      },
+      "id": "10000000-0000-4000-8000-000000000116",
+      "name": "Format Ingestion Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2180,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "10000000-0000-4000-8000-000000000117",
+      "name": "Respond Ingestion Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2420,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Ingestion": {
+      "main": [
+        [
+          {
+            "node": "Check Bearer Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Bearer Auth": {
+      "main": [
+        [
+          {
+            "node": "IF Authorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Authorized": {
+      "main": [
+        [
+          {
+            "node": "Prepare Input",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Input": {
+      "main": [
+        [
+          {
+            "node": "Route Input Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Input Format": {
+      "main": [
+        [
+          {
+            "node": "Build Document Item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract CSV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Text or DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Text or DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Bad Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF": {
+      "main": [
+        [
+          {
+            "node": "Build Document Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CSV": {
+      "main": [
+        [
+          {
+            "node": "Build Document Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text or DOCX": {
+      "main": [
+        [
+          {
+            "node": "Build Document Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Document Item": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Format Ingestion Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Ingestion Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Ingestion Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

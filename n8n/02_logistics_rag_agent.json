@@ -1,0 +1,649 @@
+{
+  "name": "02_logistics_rag_agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "logistics-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "20000000-0000-4000-8000-000000000201",
+      "name": "Webhook Logistics Agent",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "logistics-rag-agent-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const expected = ($env.WEBHOOK_BEARER_TOKEN || '').trim();\nconst headers = $json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization || '';\nconst authorized = !expected || authHeader === ('Bearer ' + expected);\nconst body = ($json.body && typeof $json.body === 'object') ? $json.body : $json;\nreturn [{\n  json: {\n    headers,\n    body,\n    authorized\n  }\n}];"
+      },
+      "id": "20000000-0000-4000-8000-000000000202",
+      "name": "Check Bearer Auth",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "agent-auth-1",
+              "leftValue": "={{ $json.authorized }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "20000000-0000-4000-8000-000000000203",
+      "name": "IF Authorized",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ ({ status: 'error', message: 'Unauthorized: invalid or missing Bearer token' }) }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "20000000-0000-4000-8000-000000000204",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "hc-cond-1",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "healthcheck",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "20000000-0000-4000-8000-000000000205",
+      "name": "IF Healthcheck",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ ({ status: 'ok', service: 'LogisticsRAGAgent', mode: 'healthcheck' }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "20000000-0000-4000-8000-000000000206",
+      "name": "Respond Healthcheck",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1140,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "agent": "toolsAgent",
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "={{ 'Si odborný AI dispečer a logistický asistent pre dopravnú logistiku (LogisticsRAGAgent). ' + 'Aktuálne požadovaný jazyk odpovede je: ' + ($json.body.language || 'sk') + ' (sk = slovenčina, ru = ruština, en = angličtina). ' + 'Odpovedaj VÝHRADNE v požadovanom jazyku bez miešania jazykov. ' + 'Máš k dispozícii nástroje: ' + '1) qdrant_logistics_knowledge_base (Qdrant Vector Store) na vyhľadávanie interných taríf, smerníc o cestovných náhradách, zmlúv, CMR/SOP postupov, faktúr a účteniek; ' + '2) Gmail Search Tool, Gmail Read Message Tool a Gmail Create Draft Tool na vyhľadávanie e-mailov/účteniek (napr. Google One), čítanie detailov a prípravu konceptov odpovedí; ' + '3) invoice_receipt_verifier (AI Agent Tool) – špecializovaný subagent na krížovú kontrolu faktúr a pokladničných dokladov oproti tarifám a limitom v Qdrante. ' + 'Nikdy si nevymýšľaj čísla, tarify ani obsah e-mailov. Vždy použi príslušný nástroj a v odpovedi uveď konkrétne zdroje (názov súboru alebo predmet e-mailu).' }}",
+          "returnIntermediateSteps": true,
+          "maxIterations": 8
+        }
+      },
+      "id": "20000000-0000-4000-8000-000000000207",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1160,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:3b",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "20000000-0000-4000-8000-000000000208",
+      "name": "Ollama Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        940,
+        580
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "OLLAMA_CREDENTIAL_ID",
+          "name": "Ollama Local Tunnel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Check Bearer Auth').first().json.body.sessionId || 'default-session' }}",
+        "contextWindowLength": 10
+      },
+      "id": "20000000-0000-4000-8000-000000000209",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1100,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "qdrant_logistics_knowledge_base",
+        "toolDescription": "Search internal logistics documents in Qdrant collection logistics_docs: carrier tariffs, contracts, travel allowance directives, CMR SOP manuals, uploaded invoices and receipts. Returns relevant text chunks with filename, category, and doc_type metadata.",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "logistics_docs",
+          "mode": "list",
+          "cachedResultName": "logistics_docs"
+        },
+        "topK": 5,
+        "options": {}
+      },
+      "id": "20000000-0000-4000-8000-000000000210",
+      "name": "Qdrant Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        580
+      ],
+      "credentials": {
+        "qdrantApi": {
+          "id": "QDRANT_CREDENTIAL_ID",
+          "name": "Qdrant Cloud API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text"
+      },
+      "id": "20000000-0000-4000-8000-000000000211",
+      "name": "Embeddings Ollama",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        780
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "OLLAMA_CREDENTIAL_ID",
+          "name": "Ollama Local Tunnel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Search Gmail messages and payment receipts using Gmail query syntax q (for example: 'Google One', 'faktura', 'invoice', 'CMR').",
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 5,
+        "filters": {
+          "q": "={{ $fromAI('q', 'Gmail search query string, e.g. Google One or invoice') }}"
+        }
+      },
+      "id": "20000000-0000-4000-8000-000000000212",
+      "name": "Gmail Search Tool",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1460,
+        580
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_OAUTH2_CREDENTIAL_ID",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Read the full body, subject, sender, date, and receipt/payment amount details of a specific Gmail message by messageId.",
+        "resource": "message",
+        "operation": "get",
+        "messageId": "={{ $fromAI('messageId', 'Gmail message ID returned by Gmail Search Tool') }}",
+        "simple": false
+      },
+      "id": "20000000-0000-4000-8000-000000000213",
+      "name": "Gmail Read Message Tool",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1620,
+        580
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_OAUTH2_CREDENTIAL_ID",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Create a Gmail reply draft for a customer or carrier inquiry without sending it automatically.",
+        "resource": "draft",
+        "operation": "create",
+        "subject": "={{ $fromAI('subject', 'Email reply subject') }}",
+        "message": "={{ $fromAI('message', 'Email reply body text') }}",
+        "options": {
+          "sendTo": "={{ $fromAI('to', 'Recipient email address') }}"
+        }
+      },
+      "id": "20000000-0000-4000-8000-000000000214",
+      "name": "Gmail Create Draft Tool",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1780,
+        580
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_OAUTH2_CREDENTIAL_ID",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "invoice_receipt_verifier",
+        "description": "Specialized subagent for verifying supplier invoices and driver receipts (fuel, toll, parking, minor repairs, waiting fees/stojne, pallet rates, VAT/DPH) against internal tariffs and travel allowance limits in Qdrant.",
+        "text": "={{ $fromAI('verification_task', 'Detailed invoice or receipt items, billed amounts, currency, and context to verify against internal tariffs and limits') }}",
+        "options": {
+          "systemMessage": "You are a specialized Logistics Invoice & Receipt Verification Subagent (AI Agent Tool). Use qdrant_tariffs_and_limits to retrieve official carrier tariffs (km rates, pallet rates, waiting/stojne fees, toll/myto, fuel surcharge, ADR surcharge, payment terms) and the driver travel allowance & receipt directive (fuel, toll, parking, minor repair limits, VAT/DPH rules). Cross-check every billed line item against company rules, list compliant items, flag any overcharges or missing VAT/DPH details, and clearly state whether manual approval is required."
+        }
+      },
+      "id": "20000000-0000-4000-8000-000000000215",
+      "name": "Invoice & Receipt Verification Subagent",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:3b",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "20000000-0000-4000-8000-000000000216",
+      "name": "Ollama Chat Model (Subagent)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        780
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "OLLAMA_CREDENTIAL_ID",
+          "name": "Ollama Local Tunnel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "qdrant_tariffs_and_limits",
+        "toolDescription": "Retrieve internal carrier tariffs, contract rates, surcharges, and driver travel allowance limits from Qdrant collection logistics_docs.",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "logistics_docs",
+          "mode": "list",
+          "cachedResultName": "logistics_docs"
+        },
+        "topK": 5,
+        "options": {}
+      },
+      "id": "20000000-0000-4000-8000-000000000217",
+      "name": "Qdrant Vector Store (Subagent)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.1,
+      "position": [
+        2100,
+        780
+      ],
+      "credentials": {
+        "qdrantApi": {
+          "id": "QDRANT_CREDENTIAL_ID",
+          "name": "Qdrant Cloud API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text"
+      },
+      "id": "20000000-0000-4000-8000-000000000218",
+      "name": "Embeddings Ollama (Subagent)",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        2100,
+        960
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "OLLAMA_CREDENTIAL_ID",
+          "name": "Ollama Local Tunnel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const reqBody = $('Check Bearer Auth').first().json.body || {};\nconst sessionId = String(reqBody.sessionId || 'default-session');\nconst agentOutput = $json.output || $json.text || $json.response || '';\nconst steps = Array.isArray($json.intermediateSteps) ? $json.intermediateSteps : [];\n\nconst usedToolsSet = new Set();\nconst sources = [];\nconst seenSources = new Set();\n\nfunction pushSource(item) {\n  if (!item || typeof item !== 'object') return;\n  const meta = item.metadata || item.payload || item;\n  const filename = meta.filename || meta.source || item.filename || '';\n  const category = meta.category || item.category || '';\n  const doc_type = meta.doc_type || item.doc_type || '';\n  const snippetRaw = item.pageContent || item.text || item.snippet || meta.text || '';\n  const snippet = String(snippetRaw).trim().slice(0, 280);\n  if (!filename && !snippet) return;\n  const key = `${filename}|${snippet.slice(0, 80)}`;\n  if (seenSources.has(key)) return;\n  seenSources.add(key);\n  sources.push({\n    filename: String(filename || 'unknown'),\n    category: String(category || ''),\n    doc_type: String(doc_type || ''),\n    snippet\n  });\n}\n\nfor (const step of steps) {\n  const toolName = step && step.action && step.action.tool ? String(step.action.tool) : '';\n  if (toolName) usedToolsSet.add(toolName);\n\n  const obs = step ? step.observation : null;\n  if (!obs) continue;\n\n  let parsed = obs;\n  if (typeof obs === 'string') {\n    try {\n      parsed = JSON.parse(obs);\n    } catch (_) {\n      parsed = null;\n    }\n  }\n  if (Array.isArray(parsed)) {\n    for (const entry of parsed) pushSource(entry);\n  } else if (parsed && typeof parsed === 'object') {\n    if (Array.isArray(parsed.documents)) {\n      for (const doc of parsed.documents) pushSource(doc);\n    } else if (Array.isArray(parsed.results)) {\n      for (const doc of parsed.results) pushSource(doc);\n    } else {\n      pushSource(parsed);\n    }\n  }\n}\n\nreturn [{\n  json: {\n    status: 'ok',\n    answer: String(agentOutput).trim(),\n    used_tools: Array.from(usedToolsSet),\n    sources,\n    sessionId\n  }\n}];"
+      },
+      "id": "20000000-0000-4000-8000-000000000219",
+      "name": "Format Agent Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "20000000-0000-4000-8000-000000000220",
+      "name": "Respond Agent Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Logistics Agent": {
+      "main": [
+        [
+          {
+            "node": "Check Bearer Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Bearer Auth": {
+      "main": [
+        [
+          {
+            "node": "IF Authorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Authorized": {
+      "main": [
+        [
+          {
+            "node": "IF Healthcheck",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Healthcheck": {
+      "main": [
+        [
+          {
+            "node": "Respond Healthcheck",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Search Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Read Message Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Create Draft Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model (Subagent)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Invoice & Receipt Verification Subagent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama (Subagent)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store (Subagent)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store (Subagent)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice & Receipt Verification Subagent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice & Receipt Verification Subagent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Agent Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Agent Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

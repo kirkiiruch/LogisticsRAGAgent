@@ -1,0 +1,45 @@
+SMERNICA O CESTOVNÝCH NÁHRADÁCH A LIMITOCH VÝDAVKOV VODIČOV
+(Internal Directive on Driver Travel Allowances & Receipt Limits)
+Dokument ID: DIR-2026-FIN-04 | Kategória: smernica | Platnosť od: 01.01.2026
+
+1. ÚČEL A ROZSAH PLATNOSTI
+Táto smernica stanovuje záväzné finančné limity pre preplácanie pokladničných dokladov (účteniek) vodičov nákladnej dopravy pri tuzemských a zahraničných pracovných cestách a pravidlá kontroly náležitostí pre DPH.
+
+2. LIMITY PRE POKLADNIČNÉ DOKLADY (Receipt Limits)
+a) Pohonné hmoty (PHM / Fuel):
+   - Prioritne sa tankuje prostredníctvom firemnej palivovej karty na zmluvných čerpacích staniciach.
+   - Hotovostná alebo súkromná platba za PHM na základe účtenky je povolená len v núdzových prípadoch do maximálneho limitu 120,00 EUR na jeden doklad (alebo ekvivalent v CZK/PLN/HUF).
+   - Na doklade musí byť uvedené množstvo litrov (nafta/AdBlue), jednotková cena a EČV vozidla dopísané na zadnej strane alebo v systéme.
+
+b) Parkovné (Parking Fees):
+   - Strážené kamiónové parkovisko (napr. TAPA certifikované pri preprave cenného tovaru): max. 35,00 EUR / 24 hodín.
+   - Bežné platené parkovisko v zahraničí (DE, AT, CZ, IT): max. 22,00 EUR / 24 hodín.
+   - Doklady nad 35,00 EUR za noc vyžadujú predchádzajúci písomný súhlas dispečera.
+
+c) Mýto a diaľničné známky mimo OBU (Toll / Vignettes):
+   - Núdzový nákup diaľničnej známky alebo jednorazového mýta (tunel, most, trajekt): max. 85,00 EUR na doklad bez predchádzajúceho schválenia.
+   - Prejazdové poplatky nad 85,00 EUR musia byť podložené objednávkou trasy.
+
+d) Drobné opravy a prevádzkový materiál (Minor Repairs & Consumables):
+   - Žiarovky, stierače, kvapalina do ostrekovačov, upínacie popruhy (gurtne), protišmykové podložky: limit 60,00 EUR na jeden doklad.
+   - Pneuservis / núdzový výjazdový servis: do 150,00 EUR schvaľuje vedúci dopravy telefonicky; nad 150,00 EUR sa vyžaduje faktúra priamo na IČO spoločnosti.
+
+e) Stravné a diéty (Daily Subsistence Allowance):
+   - Tuzemská pracovná cesta (SR):
+     * 5 až 12 hodín: 8,80 EUR
+     * 12 až 18 hodín: 13,10 EUR
+     * nad 18 hodín: 19,50 EUR
+   - Zahraničná pracovná cesta:
+     * Česká republika (CZ): 600 CZK / deň
+     * Nemecko (DE), Rakúsko (AT): 45,00 EUR / deň
+     * Poľsko (PL): 37,00 EUR / deň
+
+3. NÁLEŽITOSTI DOKLADU PRE DPH (VAT / DPH Compliance Rules)
+- Zjednodušená faktúra / pokladničný doklad z registračnej pokladnice (eKasa) v SR môže byť uznaná pre odpočet DPH do celkovej sumy 400,00 EUR vrátane DPH (pri pohonných hmotách z automatu do 400,00 EUR).
+- Doklad musí čitateľne obsahovať: názov a IČ DPH dodávateľa, dátum vyhotovenia, poradové číslo dokladu, popis tovaru/služby, celkovú sumu a sadzbu DPH (napr. 23 % v SR, 21 % v CZ, 19 % v DE).
+- Nečitateľné doklady, doklady bez rozpisu DPH alebo doklady s alkoholom/súkromným nákupom budú zamietnuté.
+
+4. SCHVAĽOVACIE PRAHY (Approval Thresholds)
+- Do 100,00 EUR (vrátane): automatické schválenie po overení limitov a DPH náležitostí AI agentom.
+- 100,01 EUR – 250,00 EUR: vyžaduje potvrdenie dispečera.
+- Nad 250,00 EUR alebo pri prekročení kategóriového limitu: povinné manuálne schválenie finančným oddelením.

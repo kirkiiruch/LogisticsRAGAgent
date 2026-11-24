@@ -1,0 +1,28 @@
+# LogisticsRAGAgent — n8n Docker image for Hugging Face Spaces (Hybrid Cloud + Local Ollama)
+FROM docker.n8n.io/n8nio/n8n:latest
+
+USER root
+RUN mkdir -p /home/node/.n8n && chown -R 1000:1000 /home/node/.n8n && chmod -R 775 /home/node/.n8n
+
+# Hugging Face Spaces listens on port 7860
+ENV N8N_PORT=7860 \
+    N8N_LISTEN_ADDRESS=0.0.0.0 \
+    N8N_USER_FOLDER=/home/node/.n8n \
+    N8N_PROXY_HOPS=1 \
+    N8N_PROTOCOL=https \
+    N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true \
+    GENERIC_TIMEZONE=Europe/Bratislava \
+    TZ=Europe/Bratislava \
+    DB_TYPE=postgresdb \
+    DB_POSTGRESDB_PORT=5432 \
+    DB_POSTGRESDB_SSL_ENABLED=true \
+    DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false
+
+# Note: Provide DB_POSTGRESDB_HOST, DB_POSTGRESDB_DATABASE, DB_POSTGRESDB_USER,
+# DB_POSTGRESDB_PASSWORD, N8N_ENCRYPTION_KEY, N8N_HOST, WEBHOOK_URL,
+# and optional WEBHOOK_BEARER_TOKEN in Hugging Face Space Variables & Secrets.
+
+USER node
+EXPOSE 7860
+
+CMD ["n8n", "start"]

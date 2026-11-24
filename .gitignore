@@ -1,0 +1,38 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*.json
+*client_secret*.json
+
+# Python & Testing
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+
+# Desktop App Build Artifacts
+desktop_app/build/
+desktop_app/dist/
+*.spec
+*.log
+
+# Local Docker Volumes & Data
+n8n_data/
+qdrant_storage/
+ollama_data/
+postgres_data/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
