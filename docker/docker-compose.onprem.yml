@@ -41,6 +41,8 @@ services:
     container_name: logistics_ollama
     restart: unless-stopped
     profiles: ["cpu", ""]
+    environment:
+      OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-8192}
     ports:
       - "11434:11434"
     volumes:
@@ -53,6 +55,8 @@ services:
     container_name: logistics_ollama_gpu
     restart: unless-stopped
     profiles: ["gpu"]
+    environment:
+      OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-8192}
     ports:
       - "11434:11434"
     volumes:

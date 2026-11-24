@@ -148,7 +148,8 @@ class TestAgentWorkflow:
 
         hc_branches = wf["connections"]["IF Healthcheck"]["main"]
         assert hc_branches[0][0]["node"] == "Respond Healthcheck"
-        assert hc_branches[1][0]["node"] == "AI Agent"
+        assert hc_branches[1][0]["node"] == "Prepare Date & Context"
+        assert wf["connections"]["Prepare Date & Context"]["main"][0][0]["node"] == "AI Agent"
 
         hc_body = nodes["Respond Healthcheck"]["parameters"]["responseBody"]
         assert "LogisticsRAGAgent" in hc_body
@@ -224,6 +225,48 @@ class TestAgentWorkflow:
         assert (
             wf["connections"]["Qdrant Vector Store (Subagent)"]["ai_tool"][0][0]["node"] == sub_name
         )
+        assert wf["connections"]["Calculator (Subagent)"]["ai_tool"][0][0]["node"] == sub_name
+
+    def test_context_optimization_time_awareness_and_math_tools(self, wf: dict[str, Any]) -> None:
+        nodes = _nodes_by_name(wf)
+
+        # Higher limits with compact context protections
+        gmail_search = nodes["Gmail Search Tool"]
+        assert gmail_search["parameters"]["limit"] >= 20
+        assert gmail_search["parameters"]["simple"] is True
+
+        for q_name in ("Qdrant Vector Store", "Qdrant Vector Store (Subagent)"):
+            assert nodes[q_name]["parameters"]["topK"] >= 8
+
+        assert nodes["Simple Memory"]["parameters"]["contextWindowLength"] <= 6
+        assert nodes["AI Agent"]["parameters"]["options"]["maxIterations"] >= 10
+
+        # Calendar / time context node & prompt injection
+        date_node = nodes["Prepare Date & Context"]
+        assert "Europe/Bratislava" in date_node["parameters"]["jsCode"]
+        assert "calendar_context" in date_node["parameters"]["jsCode"]
+        assert "calendar_context" in nodes["AI Agent"]["parameters"]["options"]["systemMessage"]
+        assert (
+            "calendar_context"
+            in nodes["Invoice & Receipt Verification Subagent"]["parameters"]["options"]["systemMessage"]
+        )
+
+        # Calculator & Custom Code Tools wired to AI Agent / Subagent
+        calcs = [
+            n for n in wf["nodes"] if n.get("type") == "@n8n/n8n-nodes-langchain.toolCalculator"
+        ]
+        assert len(calcs) == 2
+        assert wf["connections"]["Calculator"]["ai_tool"][0][0]["node"] == "AI Agent"
+
+        code_tools = [
+            n for n in wf["nodes"] if n.get("type") == "@n8n/n8n-nodes-langchain.toolCode"
+        ]
+        assert len(code_tools) == 2
+        for ct in code_tools:
+            assert ct["parameters"]["language"] == "jsCode"
+            assert "query" in ct["parameters"]["jsCode"]
+            assert "JSON.stringify" in ct["parameters"]["jsCode"]
+            assert wf["connections"][ct["name"]]["ai_tool"][0][0]["node"] == "AI Agent"
 
     def test_no_hardcoded_credentials_or_instance_ids(self, wf: dict[str, Any]) -> None:
         raw_text = AGENT_WORKFLOW_PATH.read_text(encoding="utf-8")
@@ -277,6 +320,8 @@ class TestSampleDocsAndInfra:
         assert n8n_env["QDRANT_URL"] == "http://qdrant:6333"
         assert "${DB_POSTGRESDB_PASSWORD" in str(n8n_env["DB_POSTGRESDB_PASSWORD"])
         assert "${N8N_ENCRYPTION_KEY" in str(n8n_env["N8N_ENCRYPTION_KEY"])
+        assert str(services["ollama"]["environment"]["OLLAMA_CONTEXT_LENGTH"]).endswith("8192}")
+        assert str(services["ollama-gpu"]["environment"]["OLLAMA_CONTEXT_LENGTH"]).endswith("8192}")
 
     def test_start_local_ollama_ps1_contents(self) -> None:
         script_path = DOCKER_DIR / "start_local_ollama.ps1"
@@ -285,6 +330,8 @@ class TestSampleDocsAndInfra:
         assert "qwen2.5:3b" in content
         assert "nomic-embed-text" in content
         assert "11434" in content
+        assert "OLLAMA_CONTEXT_LENGTH" in content
+        assert "8192" in content
         assert "cloudflared" in content
         assert "trycloudflare.com" in content
 

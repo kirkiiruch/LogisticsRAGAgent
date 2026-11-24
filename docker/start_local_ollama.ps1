@@ -13,7 +13,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Ensure sufficient context window for multi-tool RAG + Gmail aggregation on 4 GB VRAM GPUs
+if (-not $env:OLLAMA_CONTEXT_LENGTH) {
+    $env:OLLAMA_CONTEXT_LENGTH = "8192"
+}
+
 Write-Host "=== LogisticsRAGAgent: Local Ollama + Cloudflare Tunnel ===" -ForegroundColor Cyan
+Write-Host "Using OLLAMA_CONTEXT_LENGTH=$($env:OLLAMA_CONTEXT_LENGTH)" -ForegroundColor DarkCyan
 
 # 1. Verify Ollama CLI
 $ollamaCmd = Get-Command ollama -ErrorAction SilentlyContinue

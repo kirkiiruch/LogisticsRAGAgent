@@ -128,8 +128,21 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1140,
-        100
+        1120,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst parts = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Europe/Bratislava',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n  weekday: 'long'\n}).formatToParts(now);\n\nconst getPart = (t) => (parts.find((p) => p.type === t) || {}).value || '';\nconst y = Number(getPart('year'));\nconst m = Number(getPart('month'));\nconst d = Number(getPart('day'));\nconst weekday = getPart('weekday');\n\nconst pad2 = (n) => String(n).padStart(2, '0');\nconst iso = (yy, mm, dd) => `${yy}-${pad2(mm)}-${pad2(dd)}`;\nconst gmailDate = (yy, mm, dd) => `${yy}/${pad2(mm)}/${pad2(dd)}`;\nconst daysInMonth = (yy, mm) => new Date(Date.UTC(yy, mm, 0)).getUTCDate();\n\nconst todayIso = iso(y, m, d);\n\n// Current and next month boundaries\nconst nextMonthY = m === 12 ? y + 1 : y;\nconst nextMonthM = m === 12 ? 1 : m + 1;\nconst curMonthGmail = `after:${gmailDate(y, m, 1)} before:${gmailDate(nextMonthY, nextMonthM, 1)}`;\n\n// Previous month\nconst prevMonthY = m === 1 ? y - 1 : y;\nconst prevMonthM = m === 1 ? 12 : m - 1;\nconst prevMonthLastDay = daysInMonth(prevMonthY, prevMonthM);\nconst prevMonthIso = `${iso(prevMonthY, prevMonthM, 1)} .. ${iso(prevMonthY, prevMonthM, prevMonthLastDay)}`;\nconst prevMonthGmail = `after:${gmailDate(prevMonthY, prevMonthM, 1)} before:${gmailDate(y, m, 1)}`;\n\n// Quarters\nconst curQ = Math.ceil(m / 3);\nconst curQStartM = (curQ - 1) * 3 + 1;\nconst nextQY = curQ === 4 ? y + 1 : y;\nconst nextQStartM = curQ === 4 ? 1 : curQ * 3 + 1;\nconst curQGmail = `after:${gmailDate(y, curQStartM, 1)} before:${gmailDate(nextQY, nextQStartM, 1)}`;\n\nconst prevQ = curQ === 1 ? 4 : curQ - 1;\nconst prevQY = curQ === 1 ? y - 1 : y;\nconst prevQStartM = (prevQ - 1) * 3 + 1;\nconst prevQEndM = prevQ * 3;\nconst prevQEndDay = daysInMonth(prevQY, prevQEndM);\nconst prevQIso = `${iso(prevQY, prevQStartM, 1)} .. ${iso(prevQY, prevQEndM, prevQEndDay)}`;\nconst prevQGmail = `after:${gmailDate(prevQY, prevQStartM, 1)} before:${gmailDate(y, curQStartM, 1)}`;\n\n// Last 7 and 30 days\nconst d7 = new Date(Date.UTC(y, m - 1, d - 7));\nconst d30 = new Date(Date.UTC(y, m - 1, d - 30));\nconst tomorrow = new Date(Date.UTC(y, m - 1, d + 1));\nconst fmtUtcGmail = (dt) => gmailDate(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());\nconst last7Gmail = `after:${fmtUtcGmail(d7)} before:${fmtUtcGmail(tomorrow)}`;\nconst last30Gmail = `after:${fmtUtcGmail(d30)} before:${fmtUtcGmail(tomorrow)}`;\n\nconst calendar_context = [\n  `Dnes (Europe/Bratislava): ${todayIso} (${weekday})`,\n  `Tento mesiac (${y}-${pad2(m)}): ${iso(y, m, 1)} .. ${iso(y, m, daysInMonth(y, m))} | Gmail: ${curMonthGmail}`,\n  `Minuly mesiac (${prevMonthY}-${pad2(prevMonthM)}): ${prevMonthIso} | Gmail: ${prevMonthGmail}`,\n  `Aktualny kvartal (Q${curQ} ${y}): ${iso(y, curQStartM, 1)} .. ${iso(y, curQ * 3, daysInMonth(y, curQ * 3))} | Gmail: ${curQGmail}`,\n  `Minuly kvartal (Q${prevQ} ${prevQY}): ${prevQIso} | Gmail: ${prevQGmail}`,\n  `Poslednych 7 dni Gmail: ${last7Gmail} | Poslednych 30 dni Gmail: ${last30Gmail}`,\n  `Aktualny rok ${y}: ${y}-01-01 .. ${y}-12-31 | Minuly rok ${y - 1}: ${y - 1}-01-01 .. ${y - 1}-12-31`\n].join('\\n');\n\nreturn [{\n  json: {\n    ...$json,\n    today_iso: todayIso,\n    current_quarter: `Q${curQ} ${y}`,\n    previous_quarter: `Q${prevQ} ${prevQY}`,\n    previous_month: `${prevMonthY}-${pad2(prevMonthM)}`,\n    calendar_context\n  }\n}];"
+      },
+      "id": "20000000-0000-4000-8000-000000000221",
+      "name": "Prepare Date & Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        320
       ]
     },
     {
@@ -138,9 +151,9 @@
         "promptType": "define",
         "text": "={{ $json.body.message }}",
         "options": {
-          "systemMessage": "={{ 'Si odborný AI dispečer a logistický asistent pre dopravnú logistiku (LogisticsRAGAgent). ' + 'Aktuálne požadovaný jazyk odpovede je: ' + ($json.body.language || 'sk') + ' (sk = slovenčina, ru = ruština, en = angličtina). ' + 'Odpovedaj VÝHRADNE v požadovanom jazyku bez miešania jazykov. ' + 'Máš k dispozícii nástroje: ' + '1) qdrant_logistics_knowledge_base (Qdrant Vector Store) na vyhľadávanie interných taríf, smerníc o cestovných náhradách, zmlúv, CMR/SOP postupov, faktúr a účteniek; ' + '2) Gmail Search Tool, Gmail Read Message Tool a Gmail Create Draft Tool na vyhľadávanie e-mailov/účteniek (napr. Google One), čítanie detailov a prípravu konceptov odpovedí; ' + '3) invoice_receipt_verifier (AI Agent Tool) – špecializovaný subagent na krížovú kontrolu faktúr a pokladničných dokladov oproti tarifám a limitom v Qdrante. ' + 'Nikdy si nevymýšľaj čísla, tarify ani obsah e-mailov. Vždy použi príslušný nástroj a v odpovedi uveď konkrétne zdroje (názov súboru alebo predmet e-mailu).' }}",
+          "systemMessage": "={{ 'Si odborný AI dispečer a logistický asistent pre dopravnú logistiku (LogisticsRAGAgent). ' + 'Aktuálne požadovaný jazyk odpovede je: ' + ($json.body.language || 'sk') + ' (sk = slovenčina, ru = ruština, en = angličtina). ' + 'Odpovedaj VÝHRADNE v požadovanom jazyku bez miešania jazykov.\\n\\n' + '=== ČASOVÝ KONTEXT (Europe/Bratislava) ===\\n' + $json.calendar_context + '\\n\\n' + '=== NÁSTROJE A OPTIMALIZÁCIA KONTEXTU ===\\n' + '1) qdrant_logistics_knowledge_base (Qdrant Vector Store, topK=8): interné tarify, zmluvy, smernice, CMR/SOP, nahrané faktúry, účtenky a výkazy tržieb.\\n' + '2) date_period_resolver: vždy použi pri nejasných alebo vlastných obdobiach (napr. Q1, predchádzajúce dva týždne, minulý štvrťrok), aby si získal presné dátumy a Gmail filter after:/before:.\\n' + '3) Gmail Search Tool (limit=25, compact): najprv hľadaj s dátumovým filtrom (napr. \"(receipt OR platba OR invoice OR faktura OR subscription) ' + 'after:YYYY/MM/DD before:YYYY/MM/DD\"). Využi najprv subject a snippet z výsledku vyhľadávania; Gmail Read Message Tool volaj IBA na konkrétne ID správ, kde v snippete chýba presná suma alebo mena. Nikdy nekopíruj celé HTML e-mailov.\\n' + '4) Gmail Create Draft Tool: vytváraj iba návrhy odpovedí (bez automatického odoslania).\\n' + '5) financial_stats_aggregator a Calculator: NIKDY nesčítavaj, nepočítaj priemery, percentá ani DPH spamäti! Všetky sumy pošli do financial_stats_aggregator (oddelí meny EUR/USD/CZK, vypočíta sumu, priemer, min/max aj DPH) alebo Calculator.\\n' + '6) invoice_receipt_verifier (AI Agent Tool): špecializovaný subagent na krížovú kontrolu faktúr a pokladničných dokladov oproti tarifám a limitom v Qdrante.\\n\\n' + 'Nikdy si nevymýšľaj čísla, dátumy ani obsah e-mailov. Vždy uveď konkrétne zdroje (názov súboru alebo predmet a dátum e-mailu).' }}",
           "returnIntermediateSteps": true,
-          "maxIterations": 8
+          "maxIterations": 12
         }
       },
       "id": "20000000-0000-4000-8000-000000000207",
@@ -148,7 +161,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.8,
       "position": [
-        1160,
+        1420,
         320
       ]
     },
@@ -164,8 +177,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        940,
-        580
+        980,
+        660
       ],
       "credentials": {
         "ollamaApi": {
@@ -178,29 +191,29 @@
       "parameters": {
         "sessionIdType": "customKey",
         "sessionKey": "={{ $('Check Bearer Auth').first().json.body.sessionId || 'default-session' }}",
-        "contextWindowLength": 10
+        "contextWindowLength": 6
       },
       "id": "20000000-0000-4000-8000-000000000209",
       "name": "Simple Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        1100,
-        580
+        1180,
+        660
       ]
     },
     {
       "parameters": {
         "mode": "retrieve-as-tool",
         "toolName": "qdrant_logistics_knowledge_base",
-        "toolDescription": "Search internal logistics documents in Qdrant collection logistics_docs: carrier tariffs, contracts, travel allowance directives, CMR SOP manuals, uploaded invoices and receipts. Returns relevant text chunks with filename, category, and doc_type metadata.",
+        "toolDescription": "Search internal logistics documents in Qdrant collection logistics_docs (top 8 chunks): carrier tariffs, revenue reports, contracts, travel allowance directives, CMR SOP manuals, uploaded invoices and receipts. Returns relevant text chunks with filename, category, and doc_type metadata.",
         "qdrantCollection": {
           "__rl": true,
           "value": "logistics_docs",
           "mode": "list",
           "cachedResultName": "logistics_docs"
         },
-        "topK": 5,
+        "topK": 8,
         "options": {}
       },
       "id": "20000000-0000-4000-8000-000000000210",
@@ -208,8 +221,8 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
       "typeVersion": 1.1,
       "position": [
-        1280,
-        580
+        1380,
+        660
       ],
       "credentials": {
         "qdrantApi": {
@@ -227,8 +240,8 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        1280,
-        780
+        1380,
+        880
       ],
       "credentials": {
         "ollamaApi": {
@@ -240,13 +253,14 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Search Gmail messages and payment receipts using Gmail query syntax q (for example: 'Google One', 'faktura', 'invoice', 'CMR').",
+        "toolDescription": "Search up to 25 Gmail messages using Gmail query syntax q with lightweight headers and snippets (compact context). Always combine keywords with Gmail date filters when searching by time period, e.g. '(receipt OR payment OR Google One OR subscription) after:2026/10/01 before:2026/11/01'.",
         "resource": "message",
         "operation": "getAll",
         "returnAll": false,
-        "limit": 5,
+        "limit": 25,
+        "simple": true,
         "filters": {
-          "q": "={{ $fromAI('q', 'Gmail search query string, e.g. Google One or invoice') }}"
+          "q": "={{ $fromAI('q', 'Gmail search query string with optional after:YYYY/MM/DD before:YYYY/MM/DD date bounds') }}"
         }
       },
       "id": "20000000-0000-4000-8000-000000000212",
@@ -254,8 +268,8 @@
       "type": "n8n-nodes-base.gmailTool",
       "typeVersion": 2.1,
       "position": [
-        1460,
-        580
+        1580,
+        660
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -267,7 +281,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Read the full body, subject, sender, date, and receipt/payment amount details of a specific Gmail message by messageId.",
+        "toolDescription": "Read the full body, subject, sender, date, and payment details of ONE specific Gmail message by messageId. Call only when the search snippet does not already contain the exact amount, currency, or required detail.",
         "resource": "message",
         "operation": "get",
         "messageId": "={{ $fromAI('messageId', 'Gmail message ID returned by Gmail Search Tool') }}",
@@ -278,8 +292,8 @@
       "type": "n8n-nodes-base.gmailTool",
       "typeVersion": 2.1,
       "position": [
-        1620,
-        580
+        1780,
+        660
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -305,8 +319,8 @@
       "type": "n8n-nodes-base.gmailTool",
       "typeVersion": 2.1,
       "position": [
-        1780,
-        580
+        1980,
+        660
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -316,12 +330,55 @@
       }
     },
     {
+      "parameters": {},
+      "id": "20000000-0000-4000-8000-000000000222",
+      "name": "Calculator",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        2180,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "name": "financial_stats_aggregator",
+        "description": "Deterministic financial & numeric aggregator. Pass items, receipts, invoices, or revenue entries as text or JSON (e.g. 'Google One: 1.99 EUR; Netflix: 11.99 EUR; ChatGPT: 20 USD'). Computes exact per-currency totals (no rounding drift), count, average, min, max, and 20%/23% DPH (VAT) net breakdown.",
+        "language": "jsCode",
+        "jsCode": "const rawInput = typeof query === 'string' ? query : JSON.stringify(query || '');\nconst text = rawInput.trim();\nif (!text) {\n  return JSON.stringify({ error: 'Empty input passed to financial_stats_aggregator' });\n}\n\nfunction normCurrency(raw) {\n  const c = String(raw || 'EUR').trim().toUpperCase();\n  if (c === '€') return 'EUR';\n  if (c === '$') return 'USD';\n  if (c === 'KČ' || c === 'KC') return 'CZK';\n  if (c === '£') return 'GBP';\n  if (c === 'ZŁ' || c === 'ZL') return 'PLN';\n  return c || 'EUR';\n}\n\nconst entries = [];\nlet parsedJson = null;\ntry {\n  parsedJson = JSON.parse(text);\n} catch (_) {\n  parsedJson = null;\n}\n\nif (Array.isArray(parsedJson)) {\n  for (const item of parsedJson) {\n    if (typeof item === 'number' && Number.isFinite(item)) {\n      entries.push({ label: 'item', amount: item, currency: 'EUR' });\n    } else if (item && typeof item === 'object') {\n      const val = Number(String(item.amount ?? item.value ?? item.price ?? item.total ?? 0).replace(',', '.'));\n      if (Number.isFinite(val)) {\n        entries.push({\n          label: String(item.label || item.name || item.title || 'item'),\n          amount: val,\n          currency: normCurrency(item.currency)\n        });\n      }\n    }\n  }\n} else {\n  const segments = text.split(/[;\\n]+/).map((s) => s.trim()).filter(Boolean);\n  const chunkList = segments.length > 1 ? segments : text.split(/,(?=\\s*[A-Za-zÀ-žА-Яа-я€$£])/).map((s) => s.trim()).filter(Boolean);\n  for (const seg of chunkList) {\n    const re = /(-?\\d+(?:[.,]\\d{1,4})?)\\s*(EUR|USD|CZK|GBP|PLN|Kč|Kc|zł|zl|€|\\$|£)?/gi;\n    let match;\n    const matches = [];\n    while ((match = re.exec(seg)) !== null) {\n      const numStr = match[1].replace(',', '.');\n      const num = Number(numStr);\n      if (Number.isFinite(num)) {\n        matches.push({ num, cur: match[2], idx: match.index });\n      }\n    }\n    if (matches.length > 0) {\n      // Prefer match with explicit currency or last numeric value in the segment\n      const picked = matches.find((x) => x.cur) || matches[matches.length - 1];\n      const curFallback = (seg.match(/(EUR|USD|CZK|GBP|PLN|Kč|Kc|zł|zl|€|\\$|£)/i) || [])[1];\n      const label = seg.slice(0, picked.idx).replace(/[:\\-–]+$/, '').trim() || 'item';\n      entries.push({\n        label,\n        amount: picked.num,\n        currency: normCurrency(picked.cur || curFallback || 'EUR')\n      });\n    }\n  }\n}\n\nif (entries.length === 0) {\n  return JSON.stringify({ error: 'No numeric amounts found in input', raw: text.slice(0, 200) });\n}\n\nconst byCurrency = {};\nfor (const e of entries) {\n  if (!byCurrency[e.currency]) {\n    byCurrency[e.currency] = { centsList: [], items: [] };\n  }\n  const cents = Math.round(e.amount * 100);\n  byCurrency[e.currency].centsList.push(cents);\n  byCurrency[e.currency].items.push({ label: e.label, amount: Number((cents / 100).toFixed(2)) });\n}\n\nconst summary_by_currency = {};\nfor (const [cur, bucket] of Object.entries(byCurrency)) {\n  const list = bucket.centsList;\n  const sumCents = list.reduce((a, b) => a + b, 0);\n  const minCents = Math.min(...list);\n  const maxCents = Math.max(...list);\n  const avgCents = Math.round(sumCents / list.length);\n  const total = Number((sumCents / 100).toFixed(2));\n  summary_by_currency[cur] = {\n    count: list.length,\n    total,\n    average: Number((avgCents / 100).toFixed(2)),\n    min: Number((minCents / 100).toFixed(2)),\n    max: Number((maxCents / 100).toFixed(2)),\n    net_if_20pct_dph: Number((total / 1.2).toFixed(2)),\n    net_if_23pct_dph: Number((total / 1.23).toFixed(2)),\n    items: bucket.items\n  };\n}\n\nreturn JSON.stringify({\n  total_entries: entries.length,\n  currencies: Object.keys(summary_by_currency),\n  summary_by_currency\n});"
+      },
+      "id": "20000000-0000-4000-8000-000000000223",
+      "name": "Financial & Stats Aggregator",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        2380,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "name": "date_period_resolver",
+        "description": "Resolve relative or explicit date periods in SK/RU/EN (e.g. 'minulý mesiac', 'прошлый квартал', 'last quarter', 'Q2 2026', 'minulý týždeň', '2026-09', 'yesterday') into exact ISO start_date, end_date, days_count, and Gmail 'after:YYYY/MM/DD before:YYYY/MM/DD' query filter.",
+        "language": "jsCode",
+        "jsCode": "const qRaw = String(typeof query === 'string' ? query : JSON.stringify(query || '')).trim().toLowerCase();\n\nconst now = new Date();\nconst parts = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Europe/Bratislava',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit'\n}).formatToParts(now);\nconst getPart = (t) => Number((parts.find((p) => p.type === t) || {}).value);\nconst y = getPart('year');\nconst m = getPart('month');\nconst d = getPart('day');\n\nconst pad2 = (n) => String(n).padStart(2, '0');\nconst iso = (yy, mm, dd) => `${yy}-${pad2(mm)}-${pad2(dd)}`;\nconst gm = (yy, mm, dd) => `${yy}/${pad2(mm)}/${pad2(dd)}`;\nconst dim = (yy, mm) => new Date(Date.UTC(yy, mm, 0)).getUTCDate();\n\nfunction buildMonth(yy, mm, label) {\n  const nextY = mm === 12 ? yy + 1 : yy;\n  const nextM = mm === 12 ? 1 : mm + 1;\n  return {\n    period: label,\n    start_date: iso(yy, mm, 1),\n    end_date: iso(yy, mm, dim(yy, mm)),\n    days_count: dim(yy, mm),\n    gmail_query: `after:${gm(yy, mm, 1)} before:${gm(nextY, nextM, 1)}`\n  };\n}\n\nfunction buildQuarter(yy, qNum, label) {\n  const startM = (qNum - 1) * 3 + 1;\n  const endM = qNum * 3;\n  const nextY = qNum === 4 ? yy + 1 : yy;\n  const nextM = qNum === 4 ? 1 : endM + 1;\n  const startDt = Date.UTC(yy, startM - 1, 1);\n  const endDt = Date.UTC(nextY, nextM - 1, 1);\n  return {\n    period: label,\n    start_date: iso(yy, startM, 1),\n    end_date: iso(yy, endM, dim(yy, endM)),\n    days_count: Math.round((endDt - startDt) / 86400000),\n    gmail_query: `after:${gm(yy, startM, 1)} before:${gm(nextY, nextM, 1)}`\n  };\n}\n\nlet res = null;\nconst qMatch = qRaw.match(/q([1-4])(?:\\s*(\\d{4}))?/i);\nconst ymMatch = qRaw.match(/(\\d{4})-(\\d{2})/);\n\nif (qMatch) {\n  const qn = Number(qMatch[1]);\n  const qy = qMatch[2] ? Number(qMatch[2]) : y;\n  res = buildQuarter(qy, qn, `Q${qn} ${qy}`);\n} else if (ymMatch) {\n  const yy = Number(ymMatch[1]);\n  const mm = Number(ymMatch[2]);\n  if (mm >= 1 && mm <= 12) res = buildMonth(yy, mm, `${yy}-${pad2(mm)}`);\n} else if (/minul[ýy]\\s*kvart|minul[ýy]\\s*štvrť|прошл\\S*\\s*кварт|last\\s*quarter|previous\\s*quarter/.test(qRaw)) {\n  const curQ = Math.ceil(m / 3);\n  const prevQ = curQ === 1 ? 4 : curQ - 1;\n  const prevQY = curQ === 1 ? y - 1 : y;\n  res = buildQuarter(prevQY, prevQ, `Q${prevQ} ${prevQY}`);\n} else if (/tento\\s*kvart|aktu[áa]ln\\S*\\s*kvart|текущ\\S*\\s*кварт|эт\\S*\\s*кварт|this\\s*quarter|current\\s*quarter/.test(qRaw)) {\n  const curQ = Math.ceil(m / 3);\n  res = buildQuarter(y, curQ, `Q${curQ} ${y}`);\n} else if (/minul[ýy]\\s*mes|прошл\\S*\\s*мес|last\\s*month|previous\\s*month/.test(qRaw)) {\n  const pm = m === 1 ? 12 : m - 1;\n  const py = m === 1 ? y - 1 : y;\n  res = buildMonth(py, pm, `${py}-${pad2(pm)}`);\n} else if (/tento\\s*mes|текущ\\S*\\s*мес|эт\\S*\\s*мес|this\\s*month|current\\s*month/.test(qRaw)) {\n  res = buildMonth(y, m, `${y}-${pad2(m)}`);\n} else if (/minul[ýy]\\s*rok|прошл\\S*\\s*год|last\\s*year|previous\\s*year/.test(qRaw)) {\n  res = {\n    period: String(y - 1),\n    start_date: `${y - 1}-01-01`,\n    end_date: `${y - 1}-12-31`,\n    days_count: ((y - 1) % 4 === 0 && ((y - 1) % 100 !== 0 || (y - 1) % 400 === 0)) ? 366 : 365,\n    gmail_query: `after:${y - 1}/01/01 before:${y}/01/01`\n  };\n} else if (/tento\\s*rok|текущ\\S*\\s*год|эт\\S*\\s*год|this\\s*year|current\\s*year/.test(qRaw)) {\n  res = {\n    period: String(y),\n    start_date: `${y}-01-01`,\n    end_date: `${y}-12-31`,\n    days_count: (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 366 : 365,\n    gmail_query: `after:${y}/01/01 before:${y + 1}/01/01`\n  };\n} else if (/včera|вчера|yesterday/.test(qRaw)) {\n  const yest = new Date(Date.UTC(y, m - 1, d - 1));\n  const tod = new Date(Date.UTC(y, m - 1, d));\n  const yStr = iso(yest.getUTCFullYear(), yest.getUTCMonth() + 1, yest.getUTCDate());\n  res = {\n    period: 'yesterday',\n    start_date: yStr,\n    end_date: yStr,\n    days_count: 1,\n    gmail_query: `after:${gm(yest.getUTCFullYear(), yest.getUTCMonth() + 1, yest.getUTCDate())} before:${gm(tod.getUTCFullYear(), tod.getUTCMonth() + 1, tod.getUTCDate())}`\n  };\n} else if (/týžd|недел|week/.test(qRaw)) {\n  const daysBack = /minul|прошл|last|prev/.test(qRaw) ? 14 : 7;\n  const startDt = new Date(Date.UTC(y, m - 1, d - daysBack));\n  const endDt = new Date(Date.UTC(y, m - 1, daysBack === 14 ? d - 7 : d + 1));\n  const endIncl = new Date(Date.UTC(endDt.getUTCFullYear(), endDt.getUTCMonth(), endDt.getUTCDate() - 1));\n  res = {\n    period: qRaw,\n    start_date: iso(startDt.getUTCFullYear(), startDt.getUTCMonth() + 1, startDt.getUTCDate()),\n    end_date: iso(endIncl.getUTCFullYear(), endIncl.getUTCMonth() + 1, endIncl.getUTCDate()),\n    days_count: Math.round((endDt - startDt) / 86400000),\n    gmail_query: `after:${gm(startDt.getUTCFullYear(), startDt.getUTCMonth() + 1, startDt.getUTCDate())} before:${gm(endDt.getUTCFullYear(), endDt.getUTCMonth() + 1, endDt.getUTCDate())}`\n  };\n} else {\n  res = {\n    period: 'today',\n    today: iso(y, m, d),\n    current_quarter: `Q${Math.ceil(m / 3)} ${y}`,\n    note: 'Could not match specific period phrase; use today or Q1..Q4 YYYY format.'\n  };\n}\n\nreturn JSON.stringify({ today: iso(y, m, d), timezone: 'Europe/Bratislava', ...res });"
+      },
+      "id": "20000000-0000-4000-8000-000000000224",
+      "name": "Date & Period Resolver",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        2580,
+        660
+      ]
+    },
+    {
       "parameters": {
         "name": "invoice_receipt_verifier",
         "description": "Specialized subagent for verifying supplier invoices and driver receipts (fuel, toll, parking, minor repairs, waiting fees/stojne, pallet rates, VAT/DPH) against internal tariffs and travel allowance limits in Qdrant.",
         "text": "={{ $fromAI('verification_task', 'Detailed invoice or receipt items, billed amounts, currency, and context to verify against internal tariffs and limits') }}",
         "options": {
-          "systemMessage": "You are a specialized Logistics Invoice & Receipt Verification Subagent (AI Agent Tool). Use qdrant_tariffs_and_limits to retrieve official carrier tariffs (km rates, pallet rates, waiting/stojne fees, toll/myto, fuel surcharge, ADR surcharge, payment terms) and the driver travel allowance & receipt directive (fuel, toll, parking, minor repair limits, VAT/DPH rules). Cross-check every billed line item against company rules, list compliant items, flag any overcharges or missing VAT/DPH details, and clearly state whether manual approval is required."
+          "systemMessage": "={{ 'You are a specialized Logistics Invoice & Receipt Verification Subagent (AI Agent Tool). Current date context:\\n' + $('Prepare Date & Context').first().json.calendar_context + '\\n\\nUse qdrant_tariffs_and_limits to retrieve official carrier tariffs (km rates, pallet rates, waiting/stojne fees, toll/myto, fuel surcharge, ADR surcharge, payment terms) and the driver travel allowance & receipt directive (fuel, toll, parking, minor repair limits, VAT/DPH rules). ALWAYS use the Calculator tool for every multiplication, addition, percentage discrepancy check (3% threshold), and VAT/DPH check. Cross-check every billed line item against company rules, list compliant items, flag any overcharges or missing VAT/DPH details, and clearly state whether manual approval is required.' }}"
         }
       },
       "id": "20000000-0000-4000-8000-000000000215",
@@ -329,8 +386,8 @@
       "type": "@n8n/n8n-nodes-langchain.agentTool",
       "typeVersion": 2,
       "position": [
-        1980,
-        580
+        2820,
+        660
       ]
     },
     {
@@ -345,8 +402,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        1900,
-        780
+        2620,
+        880
       ],
       "credentials": {
         "ollamaApi": {
@@ -359,14 +416,14 @@
       "parameters": {
         "mode": "retrieve-as-tool",
         "toolName": "qdrant_tariffs_and_limits",
-        "toolDescription": "Retrieve internal carrier tariffs, contract rates, surcharges, and driver travel allowance limits from Qdrant collection logistics_docs.",
+        "toolDescription": "Retrieve up to 8 chunks of internal carrier tariffs, contract rates, surcharges, and driver travel allowance limits from Qdrant collection logistics_docs.",
         "qdrantCollection": {
           "__rl": true,
           "value": "logistics_docs",
           "mode": "list",
           "cachedResultName": "logistics_docs"
         },
-        "topK": 5,
+        "topK": 8,
         "options": {}
       },
       "id": "20000000-0000-4000-8000-000000000217",
@@ -374,8 +431,8 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
       "typeVersion": 1.1,
       "position": [
-        2100,
-        780
+        2820,
+        880
       ],
       "credentials": {
         "qdrantApi": {
@@ -383,6 +440,17 @@
           "name": "Qdrant Cloud API"
         }
       }
+    },
+    {
+      "parameters": {},
+      "id": "20000000-0000-4000-8000-000000000225",
+      "name": "Calculator (Subagent)",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        3020,
+        880
+      ]
     },
     {
       "parameters": {
@@ -393,8 +461,8 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        2100,
-        960
+        2820,
+        1060
       ],
       "credentials": {
         "ollamaApi": {
@@ -412,7 +480,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1520,
+        1800,
         320
       ]
     },
@@ -429,7 +497,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1760,
+        2040,
         320
       ]
     }
@@ -484,6 +552,17 @@
             "index": 0
           }
         ],
+        [
+          {
+            "node": "Prepare Date & Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Date & Context": {
+      "main": [
         [
           {
             "node": "AI Agent",
@@ -570,6 +649,39 @@
         ]
       ]
     },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Financial & Stats Aggregator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Period Resolver": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Ollama Chat Model (Subagent)": {
       "ai_languageModel": [
         [
@@ -593,6 +705,17 @@
       ]
     },
     "Qdrant Vector Store (Subagent)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice & Receipt Verification Subagent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator (Subagent)": {
       "ai_tool": [
         [
           {
